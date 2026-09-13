@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Verify immutable LMCache wheel release assets."""
 
+# Future
 from __future__ import annotations
 
+# Standard
+from pathlib import Path
 import argparse
 import hashlib
 import json
-from pathlib import Path
 
 
 def sha256(path: Path) -> str:
