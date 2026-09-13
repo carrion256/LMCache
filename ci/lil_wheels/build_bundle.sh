@@ -27,6 +27,9 @@ if ! mkdir "${output_dir}"; then
   exit 1
 fi
 mkdir -p "${output_dir}/raw" "${output_dir}/bundle/wheels"
+python3 "${tool_dir}/verify_community_source.py" --root "${repo_root}" \
+  --contract "${tool_dir}/community-source.json" \
+  --output "${output_dir}/bundle/community-source.json"
 
 docker buildx build \
   --builder "${builder}" \
@@ -43,6 +46,9 @@ cp -a "${output_dir}/raw/wheels/." "${output_dir}/bundle/wheels/"
 
 wheel=$(find "${output_dir}/bundle/wheels" -maxdepth 1 -name 'lmcache-*.whl' -print -quit)
 test -n "${wheel}"
+python3 "${tool_dir}/verify_community_source.py" --root "${repo_root}" \
+  --contract "${tool_dir}/community-source.json" --wheel "${wheel}" \
+  --output "${output_dir}/bundle/community-source.json"
 metadata=$(unzip -p "${wheel}" '*/METADATA')
 package_name=$(awk -F': ' '$1 == "Name" {print $2; exit}' <<<"${metadata}")
 package_version=$(awk -F': ' '$1 == "Version" {print $2; exit}' <<<"${metadata}")
@@ -71,7 +77,9 @@ jq -n \
   --arg pytorch "$(lock_value pytorch.version)" \
   --arg pytorch_commit "$(lock_value pytorch.commit)" \
   --arg cuda_arch_list "$(lock_value cuda.arch-list)" \
+  --slurpfile community_source "${output_dir}/bundle/community-source.json" \
   '{schema: "local-inference-lmcache-wheel-release/v1", status: $status,
+    community_source: $community_source[0],
     scope: "LMCache Python sources and native CUDA extensions for the declared ABI",
     source: {repository: $repository, commit: $commit, tree: $tree},
     package_version: $package_version, release_tag: $release_tag,
@@ -87,7 +95,7 @@ chmod 0755 "${output_dir}/bundle/install.sh"
 (
   cd "${output_dir}/bundle"
   find wheels -maxdepth 1 -name '*.whl' -print0 | sort -z | xargs -0 sha256sum
-  sha256sum manifest.json requirements-github.txt runtime.lock install.sh
+  sha256sum manifest.json community-source.json requirements-github.txt runtime.lock install.sh
 ) > "${output_dir}/bundle/SHA256SUMS"
 
 archive="${output_dir}/lmcache-cu134-sm120-${source_commit}.tar.zst"

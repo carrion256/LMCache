@@ -3,13 +3,15 @@ name: LIL LMCache CUDA 13.4 SM120 wheels
 on:
   push:
     branches:
-      - dev
+      - dev/local-inference-lab
     tags:
       - lmcache-cu134-sm120-stable-*
     paths:
       - .github/workflows/lil-cu134-sm120-wheel-release.yml
       - csrc/**
       - lmcache/**
+      - rust/**
+      - requirements/**
       - setup_extensions/**
       - ci/lil_wheels/**
       - pyproject.toml
@@ -64,6 +66,7 @@ jobs:
             --notes-file "${output}/release-notes.md" \
             "${output}"/bundle/wheels/*.whl \
             "${output}"/bundle/manifest.json \
+            "${output}"/bundle/community-source.json \
             "${output}"/bundle/SHA256SUMS \
             "${output}"/bundle/requirements-github.txt \
             "${output}"/bundle/install.sh \
